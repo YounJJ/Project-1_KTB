@@ -1,0 +1,7 @@
+matplotlib
+numpy
+oracledb
+pandas
+python-dotenv
+scikit-learn
+xgboost
