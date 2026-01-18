@@ -37,7 +37,7 @@ def run_stress_test():
     mat_date_50y = pd.Timestamp('2074-09-10')
     bond_50y.maturity_years = (mat_date_50y - t0_date).days / 365.0
     
-    # Portfolio (Assume 50/50 mix typically, or just sum)
+    # Portfolio (Assume simple sum of the assets)
     p_10y_base = bond_10y.calculate_price(nss_base)
     p_50y_base = bond_50y.calculate_price(nss_base)
     total_assets_base = p_10y_base + p_50y_base
@@ -48,9 +48,8 @@ def run_stress_test():
     # Ratio 80%
     liability_value = total_assets_base * 0.80
     
-    # Liability Duration?
-    # K-ICS often assumes long liability duration. Let's keep 15y or estimate?
-    # User didn't specify Liability Duration, just L/A ratio. Kept 15.0 from previous logic.
+    # Liability Duration
+    # Assume 15 years
     liability_duration = 15.0 
     
     # Asset Duration
@@ -108,6 +107,17 @@ def run_stress_test():
     avg_yield_base = np.mean(yields_t0)
     avg_yield_shock = np.mean(yields_shock)
     dy = (avg_yield_shock - avg_yield_base) / 100.0 # Percent to Decimal
+    
+    print("\n--- ML Shock Details ---")
+    print(f"{'Tenor':<10} | {'Base Yield':<12} | {'Forecast':<12} | {'Shock (bp)':<12}")
+    print("-" * 55)
+    for i, tenor in enumerate(tenors):
+        # yields_t0 is a 1D array (values from a Series)
+        shock_bp = (yields_shock[i] - yields_t0[i]) * 100 
+        print(f"{tenor}y{'':<8} | {yields_t0[i]:<12.3f} | {yields_shock[i]:<12.3f} | {shock_bp:+,.2f}")
+    
+    print("-" * 55)
+    print(f"Average Shock (Parallel Equivalent): {(avg_yield_shock - avg_yield_base)*100:+.2f} bp")
     
     # Delta L = - L * D * dy
     delta_liab = - liability_value * liability_duration * dy
