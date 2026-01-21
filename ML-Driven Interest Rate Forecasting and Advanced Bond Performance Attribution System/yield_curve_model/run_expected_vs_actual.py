@@ -179,6 +179,43 @@ def run_analysis():
     plt.tight_layout()
     plt.savefig('expected_vs_actual_curve.png')
     print("Plot saved to 'expected_vs_actual_curve.png'")
+    
+    # 9. Save Table as PNG
+    print("Saving P/L Table as PNG...")
+    
+    # Prepare Data
+    data = [
+        ["Expected P/L", f"{expected_pl_10y:,.2f}", f"{expected_pl_50y:,.2f}"],
+        ["Actual P/L", f"{actual_pl_10y:,.2f}", f"{actual_pl_50y:,.2f}"],
+        ["Difference", f"{(expected_pl_10y - actual_pl_10y):,.2f}", f"{(expected_pl_50y - actual_pl_50y):,.2f}"],
+        ["Direction Acc", acc_10y, acc_50y]
+    ]
+    columns = ["Metric", "10Y Bond", "50Y Bond"]
+    
+    # Create Figure for Table
+    fig, ax = plt.subplots(figsize=(8, 3))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Create Table
+    table = ax.table(cellText=data, colLabels=columns, loc='center', cellLoc='center')
+    
+    # Style Table
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    table.scale(1.2, 1.5)  # Scale width and height
+    
+    # Header Formatting
+    for (i, j), cell in table.get_celld().items():
+        if i == 0:
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#40466e')
+        else:
+            cell.set_edgecolor('#dddddd')
+    
+    plt.title(f"Expected vs Actual P/L Analysis ({t1_date.date()})", fontsize=14, weight='bold', pad=20)
+    plt.savefig('expected_vs_actual_table.png', bbox_inches='tight', dpi=300)
+    print("Table saved to 'expected_vs_actual_table.png'")
 
 if __name__ == "__main__":
     run_analysis()
