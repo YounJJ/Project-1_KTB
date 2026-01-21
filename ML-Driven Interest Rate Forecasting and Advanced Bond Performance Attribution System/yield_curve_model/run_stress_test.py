@@ -147,6 +147,118 @@ def run_stress_test():
         print("Conclusion: Increase capital buffer or adjust asset duration.")
     else:
         print("Net Asset Value INCREASED. The scenario was favorable.")
+        
+    # --- Visualization: Stress Test Dashboard ---
+    print("Generating Stress Test Dashboard...")
+    import matplotlib.pyplot as plt
+    
+    # Data for Shock Details Table
+    shock_data = []
+    shock_columns = ["Tenor", "Base Yield", "Forecast", "Shock (bp)"]
+    for i, tenor in enumerate(tenors):
+        shock_bp = (yields_shock[i] - yields_t0[i]) * 100 
+        shock_data.append([f"{tenor}y", f"{yields_t0[i]:.3f}", f"{yields_shock[i]:.3f}", f"{shock_bp:+.2f}"])
+        
+    shock_data.append(["Avg", "", "", f"{(avg_yield_shock - avg_yield_base)*100:+.2f}"])
+
+    # Data for ALM Report Table
+    alm_data = [
+        ["Total Assets", f"{total_assets_base:,.2f}", f"{total_assets_shock:,.2f}", f"{delta_assets:+,.2f}"],
+        ["Total Liabilities", f"{liability_value:,.2f}", f"{liability_shock:,.2f}", f"{delta_liab:+,.2f}"],
+        ["Net Asset Value", f"{net_equity_base:,.2f}", f"{net_equity_shock:,.2f}", f"{delta_equity:+,.2f}"]
+    ]
+    alm_columns = ["Metric", "Base (T0)", "Shocked (ML)", "Change"]
+    
+    # Create Dashboard Figure
+    fig = plt.figure(figsize=(14, 8))
+    plt.suptitle("ALM Stress Test Dashboard (ML Scenario - Dec 2025)", fontsize=16, weight='bold')
+    
+    # Grid Layout: 2 Rows, 2 Columns
+    # Row 1: Left (Shock Table), Right (ALM Table)
+    # Row 2: Full Width (Bar Chart)
+    # Added wspace=0.3 to create more space between the two tables in the first row
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1.2], wspace=0.3)
+    
+    # 1. Shock Details Table (Top Left)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.axis('off')
+    ax1.set_title("ML Shock Details (Yield Curve Shift)", fontsize=12, weight='bold')
+    table1 = ax1.table(cellText=shock_data, colLabels=shock_columns, loc='center', cellLoc='center')
+    table1.auto_set_font_size(False)
+    table1.set_fontsize(10)
+    table1.scale(1.2, 1.3)
+    
+    # Style Table 1
+    for (i, j), cell in table1.get_celld().items():
+        if i == 0: # Header
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#40466e')
+        elif i == len(shock_data): # Average Row
+            cell.set_text_props(weight='bold')
+            cell.set_facecolor('#f0f0f0')
+    
+    # 2. ALM Report Table (Top Right)
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.axis('off')
+    ax2.set_title("ALM Stress Test Impact", fontsize=12, weight='bold')
+    table2 = ax2.table(cellText=alm_data, colLabels=alm_columns, loc='center', cellLoc='center')
+    table2.auto_set_font_size(False)
+    table2.set_fontsize(10)
+    table2.scale(1.2, 1.5)
+    
+    # Style Table 2
+    for (i, j), cell in table2.get_celld().items():
+        if i == 0: # Header
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#40466e')
+        elif j == 3: # Change Column color coding
+            val_text = cell.get_text().get_text() # Get text string
+            try:
+                # Remove comma and + sign for float conversion
+                val = float(val_text.replace(',', '').replace('+', ''))
+                if val < 0:
+                    cell.set_text_props(color='red')
+                elif val > 0:
+                    cell.set_text_props(color='green')
+            except:
+                pass
+
+    # 3. Bar Chart (Bottom)
+    ax3 = fig.add_subplot(gs[1, :])
+    
+    metrics = ["Total Assets", "Total Liabilities", "Net Asset Value"]
+    base_vals = [total_assets_base, liability_value, net_equity_base]
+    shock_vals = [total_assets_shock, liability_shock, net_equity_shock]
+    
+    x = np.arange(len(metrics))
+    width = 0.35
+    
+    rects1 = ax3.bar(x - width/2, base_vals, width, label='Base (T0)', color='#40466e')
+    rects2 = ax3.bar(x + width/2, shock_vals, width, label='Shocked (ML)', color='#e06666')
+    
+    ax3.set_ylabel('Value (Currency Unit)')
+    ax3.set_title('Financial Position comparison: Base vs Shocked')
+    ax3.set_xticks(x)
+    ax3.set_xticklabels(metrics)
+    ax3.legend()
+    ax3.grid(axis='y', linestyle='--', alpha=0.5)
+    
+    # Add value labels
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            ax3.annotate(f'{height:,.0f}',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom')
+
+    autolabel(rects1)
+    autolabel(rects2)
+    
+    plt.tight_layout()
+    plt.savefig('stress_test_dashboard.png', dpi=300)
+    print("Dashboard saved to 'stress_test_dashboard.png'")
 
 if __name__ == "__main__":
     run_stress_test()
