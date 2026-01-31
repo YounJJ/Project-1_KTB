@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from data_loader import DataLoader
 from models import ForecastingModel
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 
 def run_forecast_validation():
     # Load Data
@@ -41,19 +41,23 @@ def run_forecast_validation():
     
     for i, tenor in enumerate(tenors_to_plot):
         plt.subplot(3, 1, i+1)
+        # Individual RMSE
+        rmse = np.sqrt(mean_squared_error(actual_df[tenor], pred_df[tenor]))
+        r2 = r2_score(actual_df[tenor], pred_df[tenor])
+        print(f"{tenor} RMSE: {rmse*100:.4f} bp, R2: {r2:.4f}")
+
         plt.plot(actual_df.index, actual_df[tenor], label='Actual', color='black', linewidth=1.5)
-        plt.plot(pred_df.index, pred_df[tenor], label='XGBoost Forecast (1-step)', color='blue', linestyle='--')
+        plt.plot(pred_df.index, pred_df[tenor], label=f'XGBoost Forecast (R²={r2:.2f})', color='blue', linestyle='--')
         plt.title(f"{tenor} Yield Forecast (H2 2025)")
         plt.legend()
         plt.grid(True, alpha=0.3)
         
-        # Individual RMSE
-        rmse = np.sqrt(mean_squared_error(actual_df[tenor], pred_df[tenor]))
-        print(f"{tenor} RMSE: {rmse*100:.4f} bp")
-        
     plt.tight_layout()
-    plt.savefig('forecast_validation.png')
-    print("\nForecast validation plot saved to 'forecast_validation.png'")
+    import os
+    if not os.path.exists('images'):
+        os.makedirs('images')
+    plt.savefig('images/forecast_validation.png')
+    print("\nForecast validation plot saved to 'images/forecast_validation.png'")
 
 if __name__ == "__main__":
     run_forecast_validation()
