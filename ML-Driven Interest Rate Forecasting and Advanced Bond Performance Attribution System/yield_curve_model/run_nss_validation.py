@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from data_loader import DataLoader
 from models import NSSModel
 
@@ -61,8 +62,9 @@ def run_validation():
             print(f"Error fitting {date}: {e}")
 
     plt.tight_layout()
-    plt.savefig('nss_validation.png')
-    print("\nValidation plot saved to 'nss_validation.png'")
+    os.makedirs('images', exist_ok=True)
+    plt.savefig('images/nss_validation.png')
+    print("\nValidation plot saved to 'images/nss_validation.png'")
 
 if __name__ == "__main__":
     run_validation()

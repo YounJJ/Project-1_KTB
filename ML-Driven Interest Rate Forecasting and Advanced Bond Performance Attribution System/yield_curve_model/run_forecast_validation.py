@@ -26,8 +26,7 @@ def run_forecast_validation():
     # Tenor-Specific models (No PCA), 2 lags
     model = ForecastingModel(lags=2)
     
-    # Run Walk-Forward Validation
-    # yields=df (full dataset), test_size=len(df_test)
+    # Run Walk-Forward Validation (One-Step Ahead)
     pred_df, actual_df = model.walk_forward_validation(df, test_size=test_size)
     
     # Calculate RMSE
@@ -54,8 +53,7 @@ def run_forecast_validation():
         
     plt.tight_layout()
     import os
-    if not os.path.exists('images'):
-        os.makedirs('images')
+    os.makedirs('images', exist_ok=True)
     plt.savefig('images/forecast_validation.png')
     print("\nForecast validation plot saved to 'images/forecast_validation.png'")
 

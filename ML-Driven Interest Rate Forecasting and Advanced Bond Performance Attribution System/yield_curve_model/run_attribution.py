@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from data_loader import DataLoader
 from models import NSSModel, BondPricing, AttributionModel
@@ -113,10 +114,11 @@ def run_attribution():
                 cell.set_facecolor('#f2f2f2' if row % 2 == 0 else 'white')
         
         plt.tight_layout()
+        os.makedirs(os.path.dirname(filename) or '.', exist_ok=True)
         plt.savefig(filename, dpi=300, bbox_inches='tight')
         print(f"Summary table saved to '{filename}'")
 
-    save_results_table(df_results)
+    save_results_table(df_results, filename='images/attribution_table.png')
 
     # 4. Waterfall Chart
     def plot_waterfall(name, res, ax):
@@ -149,8 +151,8 @@ def run_attribution():
     
     plt.suptitle("Bond Performance Attribution Decomposition", fontsize=16, fontweight='bold', y=1.02)
     plt.tight_layout()
-    plt.savefig('attribution_waterfall.png', dpi=300, bbox_inches='tight')
-    print("Waterfall chart saved to 'attribution_waterfall.png'")
+    plt.savefig('images/attribution_waterfall.png', dpi=300, bbox_inches='tight')
+    print("Waterfall chart saved to 'images/attribution_waterfall.png'")
 
 if __name__ == "__main__":
     run_attribution()

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 from data_loader import DataLoader
 from models import NSSModel, BondPricing, ForecastingModel
 
@@ -68,24 +69,20 @@ def run_stress_test():
     print(f"L/A Ratio: {liability_value / total_assets_base:.2%}")
     print(f"Duration Gap: {duration_gap:.2f} years")
     
-    # 4. Generate ML Stress Scenario (Forecast Dec 2025)
+    # 4. Generate ML Stress Scenario (One-Step Forecast Dec 2025)
     print("\nGenerating ML Stress Scenario (Dec 2025 Forecast)...")
     
     model = ForecastingModel(lags=2)
     model.train(train_df)
     
-    # Use One-Step Forecast to Dec 30, 2025 (Ex-Post Scenario)
-    # This aligns with the "run_expected_vs_actual.py" logic.
     t1_date = pd.Timestamp('2025-12-30')
-    
-    # Needs full history to pick T1-1
     if t1_date not in yields_df.index:
-         # Try to find nearest if exact date missing
          t1_date = yields_df.index[yields_df.index.get_indexer([t1_date], method='nearest')[0]]
     
     t1_loc = yields_df.index.get_loc(t1_date)
     context_data = yields_df.iloc[:t1_loc]
     
+    print(f"Forecasting T1 ({t1_date.date()}) using T-1 Data...")
     final_forecast = model.predict_next_step(context_data)
     
     yields_shock = [final_forecast[f'tenor_{t}y'] for t in tenors]
@@ -257,8 +254,9 @@ def run_stress_test():
     autolabel(rects2)
     
     plt.tight_layout()
-    plt.savefig('stress_test_dashboard.png', dpi=300)
-    print("Dashboard saved to 'stress_test_dashboard.png'")
+    os.makedirs('images', exist_ok=True)
+    plt.savefig('images/stress_test_dashboard.png', dpi=300)
+    print("Dashboard saved to 'images/stress_test_dashboard.png'")
 
 if __name__ == "__main__":
     run_stress_test()

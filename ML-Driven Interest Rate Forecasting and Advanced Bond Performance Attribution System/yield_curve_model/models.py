@@ -236,6 +236,72 @@ class ForecastingModel:
             
         return pd.DataFrame(predictions, index=dates), pd.DataFrame(actuals, index=dates)
 
+    def recursive_walk_forward_validation(self, yields_df, test_size=126):
+        """
+        Performs recursive walk-forward validation.
+        Unlike walk_forward_validation, this feeds model predictions back
+        as input for subsequent steps (true recursive forecasting).
+        """
+        train_data = yields_df.iloc[:-test_size]
+        test_data = yields_df.iloc[-test_size:]
+
+        self.train(train_data)
+
+        predictions = []
+        actuals = []
+        dates = []
+
+        # History starts with actual training data only.
+        # Predictions will be appended here and used for subsequent steps.
+        history = train_data.copy()
+
+        print(f"Starting Recursive Walk-Forward Validation on {len(test_data)} steps...")
+
+        for i in range(len(test_data)):
+            context_start = max(0, len(history) - (self.lags + 2))
+            context = history.iloc[context_start:]
+
+            pred_series = self.predict_next_step(context)
+
+            # Append prediction (not actual) to history for next step
+            pred_row = pd.DataFrame([pred_series], index=[test_data.index[i]])
+            history = pd.concat([history, pred_row])
+
+            predictions.append(pred_series)
+            actuals.append(test_data.iloc[i])
+            dates.append(test_data.index[i])
+
+        return pd.DataFrame(predictions, index=dates), pd.DataFrame(actuals, index=dates)
+
+    def recursive_forecast(self, history_df, n_steps, future_dates):
+        """
+        Recursively forecast n_steps ahead from the end of history_df.
+        Each prediction is fed back as input for the next step.
+
+        history_df: DataFrame of actual yields up to T0
+        n_steps: number of steps to forecast
+        future_dates: DatetimeIndex of the future dates
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Model not trained.")
+
+        history = history_df.copy()
+        predictions = []
+
+        for i in range(n_steps):
+            context_start = max(0, len(history) - (self.lags + 2))
+            context = history.iloc[context_start:]
+
+            pred_series = self.predict_next_step(context)
+
+            idx = future_dates[i] if i < len(future_dates) else history.index[-1] + pd.Timedelta(days=1)
+            pred_row = pd.DataFrame([pred_series], index=[idx])
+            history = pd.concat([history, pred_row])
+            predictions.append(pred_series)
+
+        return pd.DataFrame(predictions, index=future_dates[:n_steps])
+
+
 
 class BondPricing:
     def __init__(self, coupon_rate, maturity_years, face_value=10000, frequency=2):

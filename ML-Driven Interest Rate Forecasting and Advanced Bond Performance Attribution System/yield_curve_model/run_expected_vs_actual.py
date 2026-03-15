@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 from data_loader import DataLoader
 from models import NSSModel, ForecastingModel, BondPricing
 
@@ -41,31 +42,15 @@ def run_analysis():
     model = ForecastingModel(lags=2)
     model.train(train_df)
     
-    # 3. Forecast T1 (One-Step Ahead Strategy)
-    # User Request: "Predict yield for target_date (T) using features from T-1" (Delta approach)
-    # This aligns with the validation accuracy.
-    
-    print(f"Forecasting T1 ({t1_date.date()}) using T-1 Data...")
-    
-    # Locate T1 index
-    # We want to use history ending at T1-1 to predict T1
-    # Check if T1 is in df
+    # 3. Forecast T1 (One-Step Ahead)
+    # Use actual data up to T1-1 to predict T1
     if t1_date not in yields_df.index:
          raise ValueError(f"Target date {t1_date} not found in yields_df")
          
     t1_loc = yields_df.index.get_loc(t1_date)
-    # History up to T1-1 (iloc excludes endpoint in slicing if we use :t1_loc actually?)
-    # yields_df.iloc[:t1_loc] gives rows 0 to t1_loc-1. Correct.
-    # So the last row is T1-1.
-    
     context_data = yields_df.iloc[:t1_loc]
     
-    # Predict T1
-    # models.predict_next_step handles:
-    # 1. Calculate diffs from context
-    # 2. Predict Delta
-    # 3. Add Delta to Last_Level (T1-1)
-    # Result is Expected Yields at T1
+    print(f"Forecasting T1 ({t1_date.date()}) using T-1 Data...")
     final_forecast = model.predict_next_step(context_data)
     
     # 4. Construct Curves (NSS)
@@ -177,8 +162,9 @@ def run_analysis():
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('expected_vs_actual_curve.png')
-    print("Plot saved to 'expected_vs_actual_curve.png'")
+    os.makedirs('images', exist_ok=True)
+    plt.savefig('images/expected_vs_actual_curve.png')
+    print("Plot saved to 'images/expected_vs_actual_curve.png'")
     
     # 9. Save Table as PNG
     print("Saving P/L Table as PNG...")
@@ -214,8 +200,8 @@ def run_analysis():
             cell.set_edgecolor('#dddddd')
     
     plt.title(f"Expected vs Actual P/L Analysis ({t1_date.date()})", fontsize=14, weight='bold', pad=20)
-    plt.savefig('expected_vs_actual_table.png', bbox_inches='tight', dpi=300)
-    print("Table saved to 'expected_vs_actual_table.png'")
+    plt.savefig('images/expected_vs_actual_table.png', bbox_inches='tight', dpi=300)
+    print("Table saved to 'images/expected_vs_actual_table.png'")
 
 if __name__ == "__main__":
     run_analysis()
